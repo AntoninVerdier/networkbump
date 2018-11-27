@@ -11,8 +11,8 @@ import matplotlib.pyplot as plt
 plt.ion()
 
 def generate_stimulus(stimon, stimoff, stim, delayend):
-	v = np.exp(kappa*np.cos(theta))
-	stimulus = np.array(stim * v).reshape(nb_neurons, 1)
+	shape = np.exp(kappa*np.cos(theta))
+	stimulus = np.array(stim * shape/sum(shape)).reshape(nb_neurons, 1)
 	stimon = np.floor(stimon/dt)
 	stimoff = np.floor(stimoff/dt)
 	delayend = np.floor(delayend/dt)
@@ -29,7 +29,7 @@ def f(x):
 			tmp.append(np.sqrt(4 * i -3))
 		elif i < 0:
 			tmp.append(0)
-	return np.array(tmp).reshape(512, 1)
+	return np.array(tmp).reshape(nb_neurons, 1)
 
 
 def decode(r, th):
@@ -64,7 +64,7 @@ tauE = 20
 tauI = 10
 
 # Connection matrices
-kappa = 5
+kappa = 1.5
 GEE = 6
 GIE = 4
 GEI = 3.4
