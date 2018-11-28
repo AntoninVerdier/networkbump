@@ -7,12 +7,8 @@ import pickle
 
 import argparse
 
-import matplotlib.pyplot as plt
-plt.ion()
-
 def generate_stimulus(stimon, stimoff, stim, delayend):
-	shape = np.exp(kappa*np.cos(theta))
-	stimulus = np.array(stim * shape/sum(shape)).reshape(nb_neurons, 1)
+	stimulus = np.array(stim * v).reshape(nb_neurons, 1)
 	stimon = np.floor(stimon/dt)
 	stimoff = np.floor(stimoff/dt)
 	delayend = np.floor(delayend/dt)
@@ -42,12 +38,11 @@ def noise(sigE, sigI):
 
 	return noise_E, noise_I
 
-def matrix_product(X, Y):
-	Z = np.zeros([512, 1])
+def mat_mul(X, Y):
+	Z = np.zeros([X.shape[0], Y.shape[1]])
 	for i in range(X.shape[0]):
 		for j in range(Y.shape[1]):
-			Z[i, j] = np.sum(X[:1]*np.transpose(Y[:, :1]))
-
+			Z[i, j] = np.sum(X[i:i+1]*np.transpose(Y[:, j:j+1]))
 	return Z
 
 # Variable definition
@@ -73,6 +68,10 @@ GII = 0.85
 I0E = 0.2
 I0I = 0.5
 
+
+stimon = 1000
+stimoff = 1500
+delayend = 1500
 stim = 200
 
 sigE = 1
@@ -80,7 +79,8 @@ sigI = 3
 
 theta = np.array([i/nb_neurons*2*np.pi for i in range(0, nb_neurons)]) # Need to find a more elegant way
 v = np.exp(kappa*np.cos(theta))
-WE = circulant(v/sum(v))
+v = v/sum(v)
+WE = circulant(v)
 
 # Define iterations when stimulus is applied
 
@@ -94,14 +94,18 @@ theta = theta - np.pi
 v = np.exp(kappa*np.cos(theta))
 v = v/sum(v)
 
-stimulus, stimon, stimoff, delayend, delaywin = generate_stimulus(1000, 1500, 200, 3500)
+stimulus = np.array(stim * v).reshape(nb_neurons, 1)
+stimon = np.floor(stimon/dt)
+stimoff = np.floor(stimoff/dt)
+delayend = np.floor(delayend/dt)
+delaywin = np.floor(100/dt)
 
 data = {}
 for i in tqdm(range(1, nb_steps), ascii=True):
 	# Additive noise
 	noise_E, noise_I = noise(sigE, sigI)
 
-	Z = matrix_product(WE, rE)
+	Z = mat_mul(WE, rE)
 	
 	IE = GEE*Z + (I0E - GIE*np.mean(rI))*np.ones([nb_neurons, 1])
 	II = (GEI*np.mean(rE) - GII*np.mean(rI) + I0I)*np.ones([nb_neurons, 1])

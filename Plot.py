@@ -1,6 +1,8 @@
 import pickle
 import numpy as np
-import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use("TkAgg") # Only for macOs config
+from matplotlib import pyplot as plt
 plt.ion()
 
 nb_neurons = 512
@@ -16,7 +18,7 @@ def plotting(data, theta):
 		plt.show()
 		plt.clf()
 
-data = pickle.load(open('../Output/data.pkl', 'rb'))
+data = pickle.load(open('../data2.pkl', 'rb'))
 theta = np.array([i/nb_neurons*2*np.pi for i in range(0, nb_neurons)]) - np.pi
 
 plotting(data, theta)
