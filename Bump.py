@@ -8,10 +8,13 @@ import argparse
 parser = argparse.ArgumentParser(description='Network Bump Model. It has two rings of neurons interconnected')
 parser.add_argument('--nb_neurons', '-n', type=int, default=512, 
 					help='Number of neurons per ring. Default value is set to 512')
+parser.add_argument('--nb_stimulus', '-ns', type=int, default=1,
+					help='Define the shape of the stimulus. Number of stimulaions around the ring')
 args = parser.parse_args()
 
 
 def generate_stimulus(stimon, stimoff, stim, delayend):
+	print(stim*v)
 	stimulus = np.array(stim * v).reshape(args.nb_neurons, 1)
 	stimon, stimoff = np.floor(stimon/dt), np.floor(stimoff/dt)
 	delayend, delaywin = np.floor(delayend/dt), np.floor(100/dt)
@@ -21,11 +24,9 @@ def generate_stimulus(stimon, stimoff, stim, delayend):
 def f(a):
 	mask = ((a > 0) & (a < 1))
 	a *= (mask*a + np.invert(mask))
-	
 	a[a < 0] = 0
-	
 	mask = a >= 1
-	a = a - a*mask + np.sqrt(4*(a*mask + 0.75*np.invert(mask)) - 3)
+	a += -a*mask + np.sqrt(4*(a*mask + 0.75*np.invert(mask)) - 3)
 
 	return a
 
@@ -39,12 +40,6 @@ def noise(sigE, sigI):
 	noise_I = sigI * np.random.randn(args.nb_neurons, 1)
 
 	return noise_E, noise_I
-
-# def mat_mul(X, Y):
-# 	Z = np.empty([X.shape[0], 1])
-# 	for i in range(X.shape[0]):
-# 		Z[i] = np.sum(X[i]*np.transpose(Y))
-# 	return Z
 
 # Variable definition
 total_time = 4200
@@ -71,7 +66,7 @@ sigI = 3
 stim = 200
 
 theta = np.array([i/args.nb_neurons*2*np.pi for i in range(0, args.nb_neurons)]) # Need to find a more elegant way
-v = np.exp(kappa*np.cos(theta))
+v = np.exp(kappa*(np.cos(theta)))
 v = v/sum(v)
 WE = circulant(v)
 
@@ -80,7 +75,7 @@ rE = np.zeros([args.nb_neurons, 1])
 rI = np.zeros([args.nb_neurons, 1])
 
 theta = theta - np.pi
-v = np.exp(kappa*np.cos(theta))
+v = np.exp(kappa*(np.cos(args.nb_stimulus*theta)))
 v = v/sum(v)
 
 stimulus, stimon, stimoff, delayend, delaywin = generate_stimulus(1000, 1500, 200, 3500)
@@ -103,8 +98,8 @@ for step in tqdm(range(1, nb_steps), ascii=True):
 	rI = rI + (f(II) + noise_I - rI)*dt/tauI
 
 	# Get decoded angle from network activity
-	ang = decode(rE, theta.reshape(512, 1))
-	
+	#ang = decode(rE, theta.reshape(args.nb_neurons, 1))
+	ang = sum(rE*theta.reshape(args.nb_neurons, 1))
 	# Save data in object
 	data[step] = [rE, rI, ang] 
 
