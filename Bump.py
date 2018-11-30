@@ -1,6 +1,7 @@
 from scipy.linalg import circulant 
 from tqdm import tqdm
 import numpy as np
+import math
 import pickle
 import argparse
 
@@ -12,14 +13,12 @@ parser.add_argument('--nb_stimulus', '-ns', type=int, default=1,
 					help='Define the shape of the stimulus. Number of stimulaions around the ring')
 args = parser.parse_args()
 
-
 def generate_stimulus(stimon, stimoff, stim, delayend):
-	print(stim*v)
 	stimulus = np.array(stim * v).reshape(args.nb_neurons, 1)
 	stimon, stimoff = np.floor(stimon/dt), np.floor(stimoff/dt)
-	delayend, delaywin = np.floor(delayend/dt), np.floor(100/dt)
+	delayend = np.floor(delayend/dt)
 
-	return stimulus, stimon, stimoff, delayend, delaywin
+	return stimulus, stimon, stimoff, delayend
 
 def f(a):
 	mask = ((a > 0) & (a < 1))
@@ -30,9 +29,8 @@ def f(a):
 
 	return a
 
-
 def decode(r, th):
-	return np.arctan2(np.sum(r*np.sin(th)), np.sum(r*np.cos(th)))
+	return np.arctan2(sum(r*np.sin(th)), sum(r*np.cos(th)))
 
 
 def noise(sigE, sigI):
@@ -78,7 +76,7 @@ theta = theta - np.pi
 v = np.exp(kappa*(np.cos(args.nb_stimulus*theta)))
 v = v/sum(v)
 
-stimulus, stimon, stimoff, delayend, delaywin = generate_stimulus(1000, 1500, 200, 3500)
+stimulus, stimon, stimoff, delayend = generate_stimulus(200, 700, 200, 3500)
 
 data = {}
 for step in tqdm(range(1, nb_steps), ascii=True):
@@ -88,8 +86,11 @@ for step in tqdm(range(1, nb_steps), ascii=True):
 	IE = GEE*np.dot(WE, rE) + (I0E - GIE*np.mean(rI))*np.ones([args.nb_neurons, 1])
 	II = (GEI*np.mean(rE) - GII*np.mean(rI) + I0I)*np.ones([args.nb_neurons, 1])
 
+	# Apply stimulus at a given time
 	if stimon < step < stimoff:
 		IE = IE + stimulus
+	
+	# Apply if needed to try to reduce the bump
 	if delayend < step < delayend + (stimoff - stimon):
 		IE = IE - stim
 
@@ -97,9 +98,9 @@ for step in tqdm(range(1, nb_steps), ascii=True):
 	rE = rE + (f(IE) + noise_E - rE)*dt/tauE
 	rI = rI + (f(II) + noise_I - rI)*dt/tauI
 
-	# Get decoded angle from network activity
-	#ang = decode(rE, theta.reshape(args.nb_neurons, 1))
-	ang = sum(rE*theta.reshape(args.nb_neurons, 1))
+	# Get decoded angle from network activity and convert it to degres
+	ang = decode(rE, theta.reshape(args.nb_neurons, 1))*180/np.pi
+	
 	# Save data in object
 	data[step] = [rE, rI, ang] 
 

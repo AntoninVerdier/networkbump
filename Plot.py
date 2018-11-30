@@ -1,5 +1,7 @@
 import pickle
 import numpy as np
+import matplotlib
+matplotlib.use("TkAgg")
 from matplotlib import cm
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -10,7 +12,7 @@ nb_neurons = 512
 # Dynamic plotting
 def plotting(data, theta):
 	for step in data:
-		plt.subplot(311)
+		#plt.subplot(311)
 		plt.xlim((-180, 180))
 		plt.ylim((-5, 20))
 		plt.title('Iteration {}'.format(step))
@@ -18,14 +20,14 @@ def plotting(data, theta):
 		plt.vlines(data[step][2], 10, 12) 		# Cursor to decode the angle (function unclear)
 		
 		# Inhibitory neurons 
-		plt.subplot(312)
-		plt.xlim((-180, 180))
-		plt.ylim((-5, 20))
-		plt.title('Iteration {}'.format(step))
-		plt.plot(theta*180/np.pi, data[step][1])
+		# plt.subplot(312)
+		# plt.xlim((-180, 180))
+		# plt.ylim((-5, 20))
+		# plt.title('Iteration {}'.format(step))
+		# plt.plot(theta*180/np.pi, data[step][1])
 		plt.pause(0.001)
 
-		plt.subplot(313, projection='polar')
+		# plt.subplot(313, projection='polar')
 
 
 		plt.show()
