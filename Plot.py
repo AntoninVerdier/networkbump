@@ -10,6 +10,27 @@ plt.ion()
 nb_neurons = 512
 
 # Dynamic plotting
+
+
+def scatter3d_time_plotting(data, theta):
+	fig = plt.figure()
+	ax = fig.add_subplot(111, projection='3d')
+
+	xs = np.tile(np.arange(4200, step=2), nb_neurons)
+	ys = np.tile(theta, 2100)
+	xs, ys = np.meshgrid(xs, ys)
+
+	zs = data
+	print('begin plotting')   
+	ax.plot_surface(xs, ys, zs)
+
+	ax.set_xlabel('X Label')
+	ax.set_ylabel('Y Label')
+	ax.set_zlabel('Z Label')
+
+	plt.savefig('scatter3d_time_plotting.png')
+
+
 def plotting(data, theta):
 	for step in data:
 		#plt.subplot(311)
@@ -34,9 +55,14 @@ def plotting(data, theta):
 		plt.clf()
 
 data = pickle.load(open('../Output/data.pkl', 'rb'))
+
 theta = np.array([i/nb_neurons*2*np.pi for i in range(0, nb_neurons)]) - np.pi
 
-plotting(data, theta)
+#plotting(data, theta)
+rE_line = [i for step in data for i in data[step][0]]
+print(len(rE_line))
+
+scatter3d_time_plotting(rE_line, theta)
 
 
 def experimental_3d_plotting(data, theta):
@@ -51,7 +77,7 @@ def experimental_3d_plotting(data, theta):
 	Z = data[500][0]
 	# Plot the surface.
 	surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm,
-	                       linewidth=0, antialiased=False)
+						   linewidth=0, antialiased=False)
 
 	# Customize the z axis.
 	ax.set_xlim(-1, 1)

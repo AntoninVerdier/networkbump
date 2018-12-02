@@ -79,7 +79,7 @@ v = v/sum(v)
 stimulus, stimon, stimoff, delayend = generate_stimulus(200, 700, 200, 3500)
 
 data = {}
-for step in tqdm(range(1, nb_steps), ascii=True):
+for step in tqdm(range(1, nb_steps + 1), ascii=True):
 	
 	noise_E, noise_I = noise(sigE, sigI)
 	
@@ -105,6 +105,7 @@ for step in tqdm(range(1, nb_steps), ascii=True):
 	data[step] = [rE, rI, ang] 
 
 # Save data in dictionnary
+print(len(data))
 pickle.dump(data, open('../Output/data.pkl', 'wb'))
 
 
