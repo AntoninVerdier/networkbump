@@ -18,7 +18,11 @@ parser.add_argument('--nb_stimulus', '-ns', type=int, default=1,
 					help='Define the shape of the stimulus. Number of stimulaions around the ring')
 parser.add_argument('--plot', '-p', action='store_true',
 					help='Plot the data')
+parser.add_argument('--name', '-f', type=str, default='unk',
+					help='Suffix for plot name')
 args = parser.parse_args()
+
+
 
 class Stimulus:
 	def __init__(self):
@@ -26,14 +30,16 @@ class Stimulus:
 		self.theta = np.arange(args.nb_neurons)*2*np.pi/args.nb_neurons
 		self.nb_neurons = args.nb_neurons
 
-	def exponential(self, min_val=0.0035, gain=5):
+	def exponential(self, min_val=0.0035, gain=5, roll=0):
 		v = np.exp(self.kappa*(np.cos(args.nb_stimulus*(self.theta - np.pi))))
 		v = v/sum(v)
 		v[v < min_val] = 0
 
-		v2 = np.roll(v, 100)
-
-		return (v + v2)*gain
+		if roll != 0:
+			v2 = np.roll(v, np.int(roll*512/360))
+			return (v + v2)*gain
+		
+		return v
 
 	def squared(self, max_val=0.004, length_stimulus=60):
 		v = np.zeros(self.nb_neurons)
@@ -44,8 +50,6 @@ class Stimulus:
 		v = np.zeros(self.nb_neurons)
 		v[int(v.shape[0]/2 - length_stimulus/2):int(v.shape[0]/2 + length_stimulus/2)] = np.sin(np.linspace(0, np.pi, num=length_stimulus)) * max_val
 		return v
-
-
 
 
 def generate_stimulus(stimulus_type, stimon, stimoff, stim, delayend=3500):
@@ -75,7 +79,7 @@ def noise(sigE, sigI):
 	return noise_E, noise_I
 
 # Variable definition
-total_time = 2000
+total_time = 5000
 dt = 2
 nb_steps = int(total_time/dt)
 
@@ -109,7 +113,7 @@ WE = circulant(v)
 rE = np.zeros([args.nb_neurons, 1])
 rI = np.zeros([args.nb_neurons, 1])
 
-stimulus_type = Stimulus().exponential(gain=5)
+stimulus_type = Stimulus().exponential(gain=1, roll=0)
 stimulus, stimon, stimoff, delayend = generate_stimulus(stimulus_type, 200, 700, 200)
 
 data = {}
@@ -120,31 +124,38 @@ for step in tqdm(range(1, nb_steps + 1), ascii=True):
 	IE = GEE*np.dot(WE, rE) + (I0E - GIE*np.mean(rI))*np.ones([args.nb_neurons, 1])
 	II = (GEI*np.mean(rE) - GII*np.mean(rI) + I0I)*np.ones([args.nb_neurons, 1])
 
-	# Apply stimulus at a given time
+	#Apply stimulus at a given time	
 	if stimon < step < stimoff:
 		IE = IE + stimulus
+
+	# # Apply if interval is needed
+	# if stimoff < step < stimoff + 200:
+	# 	IE = IE - stimulus
+
+	# if stimoff + 200 < step < stimoff + 450:
+	# 	IE = IE + np.roll(stimulus, 80)
 	
-	# Apply if needed to try to reduce the bump
-	if delayend < step < delayend + (stimoff - stimon):
-		IE = IE - stim
+	# # Apply if needed to try to reduce the bump
+	# if delayend < step < delayend + (stimoff - stimon):
+	# 	IE = IE - stimulus
 
 	# Integrate with time step dependant
 	rE = rE + (f(IE) + noise_E - rE)*dt/tauE
 	rI = rI + (f(II) + noise_I - rI)*dt/tauI
 
 	# Get decoded angle from network activity and convert it to degres
-	ang = decode(rE, theta.reshape(args.nb_neurons, 1))*180/np.pi
+	ang = decode(rE, (theta - np.pi).reshape(args.nb_neurons, 1))*180/np.pi
 	
 	# Save data in object
 	data[step] = [rE, rI, ang] 
 
 # Save data in dictionnary
-pickle.dump(data, open('../Output/data.pkl', 'wb'))
+pickle.dump(data, open('../Output/data_{}.pkl'.format(args.name), 'wb'))
 
 # Plotting part
 if args.plot:
-	data = pickle.load(open('../Output/data.pkl', 'rb'))
-	Plot.heatmap(data)
-	#Plot.plotting(data, theta - np.pi)
+	Plot.heatmap(data, args.name)
+	data = pickle.load(open('../Output/data_{}.pkl'.format(args.name), 'rb'))
+	Plot.plotting(data, theta - np.pi)
 
 
